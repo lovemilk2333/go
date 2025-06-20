@@ -32,7 +32,7 @@ jobs:
           cd ..
           VERSION=${GITHUB_REF_NAME#refs/tags/}
           RELEASE_NAME="${VERSION}-linux-amd64.tar.gz"
-          tar -czf "${RELEASE_NAME}" "go-${VERSION}"
+          tar -czf "${RELEASE_NAME}" "go"
 
           echo "ls at $(pwd)"
           ls -l
