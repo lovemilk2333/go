@@ -26,25 +26,12 @@ jobs:
         run: |
           cd src
           ./make.bash
-      
+
       - name: Package Go distribution
         run: |
-          cd ..
           VERSION=${GITHUB_REF_NAME#refs/tags/}
           RELEASE_NAME="${VERSION}-linux-amd64.tar.gz"
-          tar -czf "${RELEASE_NAME}" "go"
-
-          echo "ls at $(pwd)"
-          ls -l
-          echo "ls end"
-
-          echo "workpath ${GITHUB_WORKSPACE}"
-
-          echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
-
-      - name: Move release to workspace
-        run: |
-          mv "../${RELEASE_NAME}" "${GITHUB_WORKSPACE}/${RELEASE_NAME}"
+          tar -czf "${RELEASE_NAME}" "./bin/go"
 
       - name: Upload Release
         uses: softprops/action-gh-release@v1
