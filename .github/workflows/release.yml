@@ -42,6 +42,10 @@ jobs:
 
           echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
 
+      - name: Move release to workspace
+        run: |
+          mv "../${RELEASE_NAME}" "${GITHUB_WORKSPACE}/${RELEASE_NAME}"
+
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
