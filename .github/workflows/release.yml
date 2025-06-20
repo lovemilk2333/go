@@ -1,0 +1,44 @@
+name: Release Lovemilk-Forked-Golang
+
+on:
+  push:
+    tags:
+      - 'go*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release Lovemilk-Forked-Golang
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Go bootstrap
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+      
+      - name: Build Go from source
+        run: |
+          cd src
+          ./make.bash
+      
+      - name: Package Go distribution
+        run: |
+          cd ..
+          VERSION=${GITHUB_REF_NAME#refs/tags/}
+          RELEASE_NAME="${VERSION}-linux-amd64.tar.gz"
+          mv go "go-${VERSION}"
+          tar -czf "${RELEASE_NAME}" "go-${VERSION}"
+          echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.RELEASE_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
