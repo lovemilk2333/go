@@ -38,7 +38,8 @@ jobs:
           ls -l
           echo "ls end"
 
-          mv "${RELEASE_NAME}" "${GITHUB_WORKSPACE}/../"
+          echo "workpath ${GITHUB_WORKSPACE}"
+
           echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
 
       - name: Upload Release
