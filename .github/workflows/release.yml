@@ -33,7 +33,7 @@ jobs:
           RELEASE_NAME="${VERSION}-linux-amd64.tar.gz"
 
           cd .. && \
-            tar --exclude='./.*' --exclude='./*/.*' -czf "${RELEASE_NAME}" --exclude='.[^.]*' ./go/ && \
+            tar --exclude='./.*' --exclude='./*/.*' -czf "${RELEASE_NAME}" ./go/ && \
             mv "${RELEASE_NAME}" ./go/${RELEASE_NAME}
 
           echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
