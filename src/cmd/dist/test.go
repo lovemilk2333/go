@@ -336,6 +336,10 @@ type goTest struct {
 	// omitVariant indicates that variant is used solely for the dist test name and
 	// that the set of test names run by each variant (including empty) of a package
 	// is non-overlapping.
+	//
+	// TODO(mknyszek): Consider removing omitVariant as it is no longer set to true
+	// by any test. It's too valuable to have timing information in ResultDB that
+	// corresponds directly with dist names for tests.
 	omitVariant bool
 
 	// We have both pkg and pkgs as a convenience. Both may be set, in which
@@ -595,8 +599,11 @@ func (t *tester) registerRaceBenchTest(pkg string) {
 		defer timelog("end", dt.name)
 		ranGoBench = true
 		return (&goTest{
-			variant:     "racebench",
-			omitVariant: true,               // The only execution of benchmarks in dist; benchmark names are guaranteed not to overlap with test names.
+			variant: "racebench",
+			// Include the variant even though there's no overlap in test names.
+			// This makes the test targets distinct, allowing our build system to record
+			// elapsed time for each one, which is useful for load-balancing test shards.
+			omitVariant: false,
 			timeout:     1200 * time.Second, // longer timeout for race with benchmarks
 			race:        true,
 			bench:       true,
@@ -670,7 +677,7 @@ func (t *tester) registerTests() {
 			}
 			t.registerStdTest(pkg)
 		}
-		if t.race {
+		if t.race && !t.short {
 			for _, pkg := range pkgs {
 				if t.packageHasBenchmarks(pkg) {
 					t.registerRaceBenchTest(pkg)
@@ -734,6 +741,15 @@ func (t *tester) registerTests() {
 				env:      []string{"GOFIPS140=" + version, "GOMODCACHE=" + filepath.Join(workdir, "fips-"+version)},
 			})
 		}
+	}
+
+	// Test GOEXPERIMENT=jsonv2.
+	if !strings.Contains(goexperiment, "jsonv2") {
+		t.registerTest("GOEXPERIMENT=jsonv2 go test encoding/json/...", &goTest{
+			variant: "jsonv2",
+			env:     []string{"GOEXPERIMENT=jsonv2"},
+			pkg:     "encoding/json/...",
+		})
 	}
 
 	// Test ios/amd64 for the iOS simulator.
@@ -983,8 +999,11 @@ func (t *tester) registerTests() {
 			id := fmt.Sprintf("%d_%d", shard, nShards)
 			t.registerTest("../test",
 				&goTest{
-					variant:     id,
-					omitVariant: true, // Shards of the same Go package; tests are guaranteed not to overlap.
+					variant: id,
+					// Include the variant even though there's no overlap in test names.
+					// This makes the test target more clearly distinct in our build
+					// results and is important for load-balancing test shards.
+					omitVariant: false,
 					pkg:         "cmd/internal/testdir",
 					testFlags:   []string{fmt.Sprintf("-shard=%d", shard), fmt.Sprintf("-shards=%d", nShards)},
 					runOnHost:   true,
@@ -1679,7 +1698,7 @@ func (t *tester) makeGOROOTUnwritable() (undo func()) {
 func raceDetectorSupported(goos, goarch string) bool {
 	switch goos {
 	case "linux":
-		return goarch == "amd64" || goarch == "ppc64le" || goarch == "arm64" || goarch == "s390x" || goarch == "loong64"
+		return goarch == "amd64" || goarch == "arm64" || goarch == "loong64" || goarch == "ppc64le" || goarch == "riscv64" || goarch == "s390x"
 	case "darwin":
 		return goarch == "amd64" || goarch == "arm64"
 	case "freebsd", "netbsd", "windows":
@@ -1754,7 +1773,7 @@ func buildModeSupported(compiler, buildmode, goos, goarch string) bool {
 			"ios/amd64", "ios/arm64",
 			"aix/ppc64",
 			"openbsd/arm64",
-			"windows/386", "windows/amd64", "windows/arm", "windows/arm64":
+			"windows/386", "windows/amd64", "windows/arm64":
 			return true
 		}
 		return false
@@ -1816,7 +1835,6 @@ func (t *tester) fipsSupported() bool {
 	switch {
 	case goarch == "wasm",
 		goos == "windows" && goarch == "386",
-		goos == "windows" && goarch == "arm",
 		goos == "openbsd",
 		goos == "aix":
 		return false

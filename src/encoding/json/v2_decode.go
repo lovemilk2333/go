@@ -117,19 +117,11 @@ type UnmarshalTypeError struct {
 }
 
 func (e *UnmarshalTypeError) Error() string {
-	s := "json: cannot unmarshal"
-	if e.Value != "" {
-		s += " JSON " + e.Value
-	}
-	s += " into"
-	var preposition string
-	if e.Field != "" {
-		s += " " + e.Struct + "." + e.Field
-		preposition = " of"
-	}
-	if e.Type != nil {
-		s += preposition
-		s += " Go type " + e.Type.String()
+	var s string
+	if e.Struct != "" || e.Field != "" {
+		s = "json: cannot unmarshal " + e.Value + " into Go struct field " + e.Struct + "." + e.Field + " of type " + e.Type.String()
+	} else {
+		s = "json: cannot unmarshal " + e.Value + " into Go value of type " + e.Type.String()
 	}
 	if e.Err != nil {
 		s += ": " + e.Err.Error()
@@ -199,7 +191,7 @@ func (n Number) MarshalJSONTo(enc *jsontext.Encoder) error {
 	}
 	n = cmp.Or(n, "0")
 	var num []byte
-	val := enc.UnusedBuffer()
+	val := enc.AvailableBuffer()
 	if stringify {
 		val = append(val, '"')
 		val = append(val, n...)

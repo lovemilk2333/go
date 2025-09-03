@@ -605,10 +605,7 @@ opSwitch:
 		v.budget -= inlineExtraPanicCost
 
 	case ir.ORECOVER:
-		base.FatalfAt(n.Pos(), "ORECOVER missed typecheck")
-	case ir.ORECOVERFP:
-		// recover matches the argument frame pointer to find
-		// the right panic value, so it needs an argument frame.
+		// TODO: maybe we could allow inlining of recover() now?
 		v.reason = "call to recover"
 		return true
 
@@ -1212,17 +1209,6 @@ func pruneUnusedAutos(ll []*ir.Name, vis *hairyVisitor) []*ir.Name {
 		s = append(s, n)
 	}
 	return s
-}
-
-// numNonClosures returns the number of functions in list which are not closures.
-func numNonClosures(list []*ir.Func) int {
-	count := 0
-	for _, fn := range list {
-		if fn.OClosure == nil {
-			count++
-		}
-	}
-	return count
 }
 
 func doList(list []ir.Node, do func(ir.Node) bool) bool {
